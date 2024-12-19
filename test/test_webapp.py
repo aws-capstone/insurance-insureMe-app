@@ -52,9 +52,9 @@ try:
     
     # Test Case 3: Look for the string "WELCOME TO CUSTOMER BANKING SERVICES"
     def test_case_3():
-        print('Running Test Case 3: Look for the string "Protect Your Family and Your Future"')
+        print('Running Test Case 3: Look for the string "Best insurance for your family"')
         time.sleep(2)  # Give some time to ensure the page content is fully loaded
-        specific_string = "Protect Your Family and Your Future"
+        specific_string = "Best insurance for your family"
         assert specific_string in driver.page_source, f'The string "{specific_string}" is not found on the webpage.'
         print(f'The string "{specific_string}" is present on the webpage.')
         
