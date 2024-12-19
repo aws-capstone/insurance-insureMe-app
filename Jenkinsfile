@@ -21,7 +21,7 @@ pipeline{
         choice(name: 'action', choices: ['apply', 'destroy'], description: 'Select the action to perform')
     //    booleanParam(name: 'autoApproveProd', defaultValue: false, description: 'Automatically run apply after generating plan for PROD?')
     //    choice(name: 'actionProd', choices: ['apply', 'destroy'], description: 'Select the action to perform')        
-    //}
+    }
     
     stages{
         stage('Clone Repository')
