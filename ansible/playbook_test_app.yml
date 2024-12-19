@@ -1,0 +1,24 @@
+---
+- name: Copy and execute the Python script on remote host
+  hosts: all
+  become: yes
+  tasks:
+    - name: Copy the Python script to the remote host
+      copy:
+        src: ../test/test_webapp.py
+        dest: /home/ubuntu/test_webapp.py
+        mode: '0755'
+
+    - name: Ensure Python is installed
+      apt:
+        name: python3
+        state: present
+        update_cache: yes
+
+    - name: Execute the Python script on the remote host
+      command: python3 /home/ubuntu/test_webapp.py
+      register: script_output
+
+    - name: Print the script output
+      debug:
+        msg: "{{ script_output.stdout }}"

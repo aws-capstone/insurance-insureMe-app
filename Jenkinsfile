@@ -30,88 +30,88 @@ pipeline{
                 git credentialsId: 'github_token-nikitaks97', url: 'https://github.com/aws-capstone/insurance-insureMe-app.git'
             }
         }
-        stage('Test Code')
-        {
-            steps{
-                sh 'mvn test'
-            }
-        }
-        stage('Build Code')
-        {
-            steps{
-                sh 'mvn package'
-            }
-        }
-        stage('Build Image')
-        {
-            steps{
-                sh 'docker build -t capstone_project1:$BUILD_NUMBER .'
-            }
-        }
-
-        stage('Push the Image to dockerhub')
-        {
-            steps{
-                
-        withCredentials([string(credentialsId: 'docker', variable: 'docker')]) 
-                {
-               sh 'docker login -u  nikitaks997797 -p ${docker} '
-               }
-                sh 'docker tag capstone_project1:$BUILD_NUMBER nikitaks997797/capstone_project1:$BUILD_NUMBER'
-                sh 'docker push nikitaks997797/capstone_project1:$BUILD_NUMBER'
-            }
-        }
-        stage('Terraform Init'){
-            steps{
-                dir('terraform'){
-                  sh ' ls -lrt'
-                  sh 'terraform  init'
-                }
-            }
-        }
-        stage('Terraform Plan'){
-            steps{
-                dir('terraform'){
-                  sh 'terraform plan -out tfplan'
-                  sh 'terraform show -no-color tfplan > tfplan.txt'
-                }
-            }
-        }
-        stage('Apply / Destroy') {
-            steps {
-                dir('terraform'){
-                script {
-                    if (params.action == 'apply') {
-                        if (!params.autoApprove) {
-                            def plan = readFile 'tfplan.txt'
-                            input message: "Do you want to apply the plan?",
-                            parameters: [text(name: 'Plan', description: 'Please review the plan', defaultValue: plan)]
-                        }
-                        sh 'terraform ${action} -input=false tfplan'
-                    } else if (params.action == 'destroy') {
-                        sh 'terraform ${action} --auto-approve'
-                    } else {
-                        error "Invalid action selected. Please choose either 'apply' or 'destroy'."
-                    }
-                }
-                script {
-                    def output = sh(script: 'terraform output -json instance_public_ip', returnStdout: true).trim()
-                    env.EC2_PUBLIC_IP = output.replaceAll('"', '') // Remove quotes if JSON returns them
-                }
-                }
-            }
-        }
-        stage('Generate Ansible Hosts File') {
-            steps {
-                script {
-                    // Write the public IP to the Ansible hosts file
-                    writeFile file: 'hosts', text: """
-                    [webserver]
-                    ${env.EC2_PUBLIC_IP} ansible_user=ubuntu ansible_ssh_private_key_file=./terraform/insureme-test-ec2.pem
-                    """
-                }
-            }
-        }
+        //stage('Test Code')
+        //{
+        //    steps{
+        //        sh 'mvn test'
+        //    }
+        //}
+        //stage('Build Code')
+        //{
+        //    steps{
+        //        sh 'mvn package'
+        //    }
+        //}
+        //stage('Build Image')
+        //{
+        //    steps{
+        //        sh 'docker build -t capstone_project1:$BUILD_NUMBER .'
+        //    }
+        //}
+//
+        //stage('Push the Image to dockerhub')
+        //{
+        //    steps{
+        //        
+        //withCredentials([string(credentialsId: 'docker', variable: 'docker')]) 
+        //        {
+        //       sh 'docker login -u  nikitaks997797 -p ${docker} '
+        //       }
+        //        sh 'docker tag capstone_project1:$BUILD_NUMBER nikitaks997797/capstone_project1:$BUILD_NUMBER'
+        //        sh 'docker push nikitaks997797/capstone_project1:$BUILD_NUMBER'
+        //    }
+        //}
+        //stage('Terraform Init'){
+        //    steps{
+        //        dir('terraform'){
+        //          sh ' ls -lrt'
+        //          sh 'terraform  init'
+        //        }
+        //    }
+        //}
+        //stage('Terraform Plan'){
+        //    steps{
+        //        dir('terraform'){
+        //          sh 'terraform plan -out tfplan'
+        //          sh 'terraform show -no-color tfplan > tfplan.txt'
+        //        }
+        //    }
+        //}
+        //stage('Apply / Destroy') {
+        //    steps {
+        //        dir('terraform'){
+        //        script {
+        //            if (params.action == 'apply') {
+        //                if (!params.autoApprove) {
+        //                    def plan = readFile 'tfplan.txt'
+        //                    input message: "Do you want to apply the plan?",
+        //                    parameters: [text(name: 'Plan', description: 'Please review the plan', defaultValue: plan)]
+        //                }
+        //                sh 'terraform ${action} -input=false tfplan'
+        //            } else if (params.action == 'destroy') {
+        //                sh 'terraform ${action} --auto-approve'
+        //            } else {
+        //                error "Invalid action selected. Please choose either 'apply' or 'destroy'."
+        //            }
+        //        }
+        //        script {
+        //            def output = sh(script: 'terraform output -json instance_public_ip', returnStdout: true).trim()
+        //            env.EC2_PUBLIC_IP = output.replaceAll('"', '') // Remove quotes if JSON returns them
+        //        }
+        //        }
+        //    }
+        //}
+        //stage('Generate Ansible Hosts File') {
+        //    steps {
+        //        script {
+        //            // Write the public IP to the Ansible hosts file
+        //            writeFile file: 'hosts', text: """
+        //            [webserver]
+        //            ${env.EC2_PUBLIC_IP} ansible_user=ubuntu ansible_ssh_private_key_file=./terraform/insureme-test-ec2.pem
+        //            """
+        //        }
+        //    }
+        //}
         stage('Configure Test Server with Ansible') {
             steps {
                 // Run the Ansible playbook using the generated hosts file
@@ -124,8 +124,15 @@ pipeline{
             steps {
                 // Run the Ansible playbook using the generated hosts file
                 //sh 'echo "Disabled for test"'
-                sh 'ansible-playbook -i hosts ansible/playbook_deploy.yml --extra-vars "BUILD_NUMBER=${BUILD_NUMBER}"'
+                //sh 'ansible-playbook -i hosts ansible/playbook_deploy.yml --extra-vars "BUILD_NUMBER=${BUILD_NUMBER}"'
+                sh 'ansible-playbook -i hosts ansible/playbook_deploy.yml --extra-vars "BUILD_NUMBER=13"'
             }
-        }                         
+        }
+        stage('Test the application') {
+            steps {
+                // Run the Ansible playbook using the generated hosts file
+                sh 'ansible-playbook -i hosts ansible/playbook_test_app.yml'
+            }
+        }                                 
     }
 }
