@@ -1,65 +1,65 @@
-node{
+pipeline{
     
-    def mavenHome
-    def mavenCMD
-    def docker
-    def dockerCMD
-    def tagName
+    agent any
     
-    stage('prepare enviroment'){
-        echo 'initialize all the variables'
-        mavenHome = tool name: 'maven' , type: 'maven'
-        mavenCMD = "${mavenHome}/bin/mvn"
-        docker = tool name: 'docker' , type: 'org.jenkinsci.plugins.docker.commons.tools.DockerTool'
-        dockerCMD = "${docker}/bin/docker"
-        tagName="3.0"
+    tools{
+        maven 'mymaven'
     }
+
+    environment {
+        AWS_ACCESS_KEY_ID     = credentials('aws-access-key-id')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
+        AWS_DEFAULT_REGION    = 'us-east-1'
+        ANSIBLE_HOST_KEY_CHECKING = 'False'
+        DOCKER_USERNAME = credentials('docker-username')  // Jenkins stored credential for Docker username
+        DOCKER_PASSWORD = credentials('docker')  // Jenkins stored credential for Docker password        
+
+    }    
     
-    stage('git code checkout'){
-        try{
-            echo 'checkout the code from git repository'
-            git 'https://github.com/shubhamkushwah123/star-agile-insurance-project.git'
+    //parameters {
+    //    booleanParam(name: 'autoApprove', defaultValue: false, description: 'Automatically run apply after generating plan?')
+    //    choice(name: 'action', choices: ['apply', 'destroy'], description: 'Select the action to perform')
+    //    booleanParam(name: 'autoApproveProd', defaultValue: false, description: 'Automatically run apply after generating plan for PROD?')
+    //    choice(name: 'actionProd', choices: ['apply', 'destroy'], description: 'Select the action to perform')        
+    //}
+    
+    stages{
+        stage('Clone Repository')
+        {
+            steps{
+                git credentialsId: 'github_token-nikitaks97', url: 'https://github.com/aws-capstone/insurance-insureMe-app.git'
+            }
         }
-        catch(Exception e){
-            echo 'Exception occured in Git Code Checkout Stage'
-            currentBuild.result = "FAILURE"
-            emailext body: '''Dear All,
-            The Jenkins job ${JOB_NAME} has been failed. Request you to please have a look at it immediately by clicking on the below link. 
-            ${BUILD_URL}''', subject: 'Job ${JOB_NAME} ${BUILD_NUMBER} is failed', to: 'shubham@gmail.com'
+        stage('Test Code')
+        {
+            steps{
+                sh 'mvn test'
+            }
         }
-    }
-    
-    stage('Build the Application'){
-        echo "Cleaning... Compiling...Testing... Packaging..."
-        //sh 'mvn clean package'
-        sh "${mavenCMD} clean package"        
-    }
-    
-    stage('publish test reports'){
-        publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '/var/lib/jenkins/workspace/Capstone-Project-Live-Demo/target/surefire-reports', reportFiles: 'index.html', reportName: 'HTML Report', reportTitles: '', useWrapperFileDirectly: true])
-    }
-    
-    stage('Containerize the application'){
-        echo 'Creating Docker image'
-        sh "${dockerCMD} build -t shubhamkushwah123/insure-me:${tagName} ."
-    }
-    
-    stage('Pushing it ot the DockerHub'){
-        echo 'Pushing the docker image to DockerHub'
-        withCredentials([string(credentialsId: 'dock-password', variable: 'dockerHubPassword')]) {
-        sh "${dockerCMD} login -u shubhamkushwah123 -p ${dockerHubPassword}"
-        sh "${dockerCMD} push shubhamkushwah123/insure-me:${tagName}"
-            
+        stage('Build Code')
+        {
+            steps{
+                sh 'mvn package'
+            }
         }
-        
-    stage('Configure and Deploy to the test-server'){
-        ansiblePlaybook become: true, credentialsId: 'ansible-key', disableHostKeyChecking: true, installation: 'ansible', inventory: '/etc/ansible/hosts', playbook: 'ansible-playbook.yml'
-    }
-        
-        
+        stage('Build Image')
+        {
+            steps{
+                sh 'docker build -t capstone_project1:$BUILD_NUMBER .'
+            }
+        }
+
+        stage('Push the Image to dockerhub')
+        {
+            steps{
+                
+        withCredentials([string(credentialsId: 'docker', variable: 'docker')]) 
+                {
+               sh 'docker login -u  nikitaks997797 -p ${docker} '
+               }
+                sh 'docker tag capstone_project1:$BUILD_NUMBER nikitaks997797/capstone_project1:$BUILD_NUMBER'
+                sh 'docker push nikitaks997797/capstone_project1:$BUILD_NUMBER'
+            }
+        }         
     }
 }
-
-
-
-
