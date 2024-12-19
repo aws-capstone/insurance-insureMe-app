@@ -100,6 +100,32 @@ pipeline{
                 }
                 }
             }
-        }                 
+        }
+        stage('Generate Ansible Hosts File') {
+            steps {
+                script {
+                    // Write the public IP to the Ansible hosts file
+                    writeFile file: 'hosts', text: """
+                    [webserver]
+                    ${env.EC2_PUBLIC_IP} ansible_user=ubuntu ansible_ssh_private_key_file=./terraform/web-key-ec2.pem
+                    """
+                }
+            }
+        }
+        stage('Configure Test Server with Ansible') {
+            steps {
+                // Run the Ansible playbook using the generated hosts file
+                sh 'sleep 60'
+                sh 'ansible-playbook -i hosts ansible/playbook_docker.yml'
+                sh 'ansible-playbook -i hosts ansible/playbook_selenium.yml'
+            }
+        }
+        stage('Deploy to Test Server') {
+            steps {
+                // Run the Ansible playbook using the generated hosts file
+                //sh 'echo "Disabled for test"'
+                sh 'ansible-playbook -i hosts ansible/playbook_deploy.yml --extra-vars "BUILD_NUMBER=${BUILD_NUMBER}"'
+            }
+        }                         
     }
 }
