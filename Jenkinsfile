@@ -173,6 +173,31 @@ pipeline{
                 }
                 }
             }
-        }                                         
+        }
+        stage('Generate Ansible Prod Hosts File') {
+            steps {
+                script {
+                    // Write the public IP to the Ansible hosts file
+                    writeFile file: 'hosts-prod', text: """
+                    [webserver]
+                    ${env.EC2_PUBLIC_IP} ansible_user=ubuntu ansible_ssh_private_key_file=./terraform-prod/web-key-prod-ec2.pem
+                    """
+                }
+            }
+        }
+        stage('Configure Prod Server with Ansible') {
+            steps {
+                // Run the Ansible playbook using the generated hosts file
+                sh 'sleep 60'
+                sh 'ansible-playbook -i hosts-prod ansible/playbook_docker.yml'
+            }
+        }
+        stage('Deploy to Prod Server') {
+            steps {
+                // Run the Ansible playbook using the generated hosts file
+                //sh 'echo "Disabled for test"'
+                sh 'ansible-playbook -i hosts-prod ansible/playbook_deploy.yml --extra-vars "BUILD_NUMBER=${BUILD_NUMBER}"'
+            }
+        }                                                 
     }
 }
