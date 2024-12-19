@@ -133,6 +133,46 @@ pipeline{
                 // Run the Ansible playbook using the generated hosts file
                 sh 'ansible-playbook -i hosts ansible/playbook_test_app.yml'
             }
-        }                                 
+        }
+        stage('Terraform Init Prod'){
+            steps{
+                dir('terraform-prod'){
+                  sh ' ls -lrt'
+                  sh 'terraform  init'
+                }
+            }
+        }
+        stage('Terraform Plan Prod'){
+            steps{
+                dir('terraform-prod'){
+                  sh 'terraform plan -out tfplan'
+                  sh 'terraform show -no-color tfplan > tfplan.txt'
+                }
+            }
+        }
+        stage('Apply / Destroy Prod') {
+            steps {
+                dir('terraform-prod'){
+                script {
+                    if (params.actionProd == 'apply') {
+                        if (!params.autoApproveProd) {
+                            def plan = readFile 'tfplan.txt'
+                            input message: "Do you want to apply the plan?",
+                            parameters: [text(name: 'Plan', description: 'Please review the plan', defaultValue: plan)]
+                        }
+                        sh 'terraform ${actionProd} -input=false tfplan'
+                    } else if (params.actionProd == 'destroy') {
+                        sh 'terraform ${actionProd} --auto-approve'
+                    } else {
+                        error "Invalid action selected. Please choose either 'apply' or 'destroy'."
+                    }
+                }
+                script {
+                    def output = sh(script: 'terraform output -json instance_public_ip', returnStdout: true).trim()
+                    env.EC2_PUBLIC_IP = output.replaceAll('"', '') // Remove quotes if JSON returns them
+                }
+                }
+            }
+        }                                         
     }
 }
