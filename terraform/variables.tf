@@ -13,7 +13,7 @@ variable "secret_key" {
 }
 
 variable "amiid" {
-   default ="ami-005fc0f236362e99f"
+   default ="ami-0496b7aa55de022f5"
 
 }
 
