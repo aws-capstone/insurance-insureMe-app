@@ -1,0 +1,87 @@
+---
+- name: Install Docker
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install pip
+      apt:
+        name: 
+        - python3-pip
+        - unzip
+        - wget
+        state: present
+    - name: Install Selenium module
+      shell: |
+       pip install selenium
+    - name: Add Google Chrome GPG key
+      ansible.builtin.apt_key:
+        url: https://dl.google.com/linux/linux_signing_key.pub
+        state: present
+
+    # Add Google Chrome repository and install Google Chrome
+    - name: Add Google Chrome GPG key
+      ansible.builtin.apt_key:
+        url: https://dl.google.com/linux/linux_signing_key.pub
+        state: present
+
+    - name: Add Google Chrome repository
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main"
+        state: present
+
+    - name: Update apt cache and install Google Chrome
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Install Google Chrome
+      ansible.builtin.apt:
+        name: google-chrome-stable
+        state: latest
+    
+    # Remove any existing ChromeDriver
+    - name: Remove existing ChromeDriver binary and folder
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /usr/local/bin/chromedriver
+        - /tmp/chromedriver_linux64.zip
+        - /tmp/chromedriver-linux64
+
+    - name: Download ChromeDriver
+      ansible.builtin.get_url:
+        url: "https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.108/linux64/chromedriver-linux64.zip"
+        dest: /tmp/chromedriver_linux64.zip
+        mode: '0644'
+        force: yes
+
+    # Unzip ChromeDriver
+    - name: Unzip ChromeDriver to temporary directory
+      ansible.builtin.unarchive:
+        src: /tmp/chromedriver_linux64.zip
+        dest: /tmp/
+        remote_src: yes
+        mode: '0755'
+
+    # Move ChromeDriver binary to /usr/local/bin
+    - name: Move ChromeDriver binary to /usr/local/bin
+      ansible.builtin.command:
+        cmd: mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver
+      args:
+        creates: /usr/local/bin/chromedriver
+
+    - name: Ensure ChromeDriver is executable
+      ansible.builtin.file:
+        path: /usr/local/bin/chromedriver
+        mode: '0755'
+        state: file
+
+    # Test ChromeDriver installation
+    - name: Test ChromeDriver installation
+      ansible.builtin.command: chromedriver --version
+      register: chromedriver_test
+      changed_when: false
+
+    - name: Display ChromeDriver version
+      ansible.builtin.debug:
+        msg: "ChromeDriver version: {{ chromedriver_test.stdout }}"
