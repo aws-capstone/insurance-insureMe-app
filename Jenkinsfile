@@ -19,8 +19,8 @@ pipeline{
     parameters {
         booleanParam(name: 'autoApprove', defaultValue: false, description: 'Automatically run apply after generating plan?')
         choice(name: 'action', choices: ['apply', 'destroy'], description: 'Select the action to perform')
-    //    booleanParam(name: 'autoApproveProd', defaultValue: false, description: 'Automatically run apply after generating plan for PROD?')
-    //    choice(name: 'actionProd', choices: ['apply', 'destroy'], description: 'Select the action to perform')        
+        booleanParam(name: 'autoApproveProd', defaultValue: false, description: 'Automatically run apply after generating plan for PROD?')
+        choice(name: 'actionProd', choices: ['apply', 'destroy'], description: 'Select the action to perform')        
     }
     
     stages{
@@ -112,28 +112,28 @@ pipeline{
         //        }
         //    }
         //}
-        stage('Configure Test Server with Ansible') {
-            steps {
-                // Run the Ansible playbook using the generated hosts file
-                sh 'sleep 60'
-                sh 'ansible-playbook -i hosts ansible/playbook_docker.yml'
-                sh 'ansible-playbook -i hosts ansible/playbook_selenium.yml'
-            }
-        }
-        stage('Deploy to Test Server') {
-            steps {
-                // Run the Ansible playbook using the generated hosts file
-                //sh 'echo "Disabled for test"'
-                //sh 'ansible-playbook -i hosts ansible/playbook_deploy.yml --extra-vars "BUILD_NUMBER=${BUILD_NUMBER}"'
-                sh 'ansible-playbook -i hosts ansible/playbook_deploy.yml --extra-vars "BUILD_NUMBER=13"'
-            }
-        }
-        stage('Test the application') {
-            steps {
-                // Run the Ansible playbook using the generated hosts file
-                sh 'ansible-playbook -i hosts ansible/playbook_test_app.yml'
-            }
-        }
+        //stage('Configure Test Server with Ansible') {
+        //    steps {
+        //        // Run the Ansible playbook using the generated hosts file
+        //        sh 'sleep 60'
+        //        sh 'ansible-playbook -i hosts ansible/playbook_docker.yml'
+        //        sh 'ansible-playbook -i hosts ansible/playbook_selenium.yml'
+        //    }
+        //}
+        //stage('Deploy to Test Server') {
+        //    steps {
+        //        // Run the Ansible playbook using the generated hosts file
+        //        //sh 'echo "Disabled for test"'
+        //        //sh 'ansible-playbook -i hosts ansible/playbook_deploy.yml --extra-vars "BUILD_NUMBER=${BUILD_NUMBER}"'
+        //        sh 'ansible-playbook -i hosts ansible/playbook_deploy.yml --extra-vars "BUILD_NUMBER=13"'
+        //    }
+        //}
+        //stage('Test the application') {
+        //    steps {
+        //        // Run the Ansible playbook using the generated hosts file
+        //        sh 'ansible-playbook -i hosts ansible/playbook_test_app.yml'
+        //    }
+        //}
         stage('Terraform Init Prod'){
             steps{
                 dir('terraform-prod'){
