@@ -37,7 +37,7 @@ resource "aws_ssm_parameter" "ec2_public_key" {
 
 
 resource "aws_instance" "myec2" {
-  ami           = "ami-005fc0f236362e99f"
+  ami           = var.amiid
   instance_type = "t2.micro"
   key_name = aws_key_pair.aws_key.key_name
   subnet_id = aws_subnet.subnet-1.id
